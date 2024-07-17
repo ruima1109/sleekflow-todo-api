@@ -1,0 +1,264 @@
+app: todo-api
+service: todo-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, env:NODE_ENV, 'dev'}
+  region: us-east-1
+  environment:
+    NODE_ENV: ${self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - appsync:GraphQL
+      Resource:
+        - { 'Fn::GetAtt': ['TodoTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['UserToListTable', 'Arn'] }
+        - { 'Fn::GetAtt': ['TodoListTable', 'Arn'] }
+        - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${file(./src/config.js):UserToListTableName}/index/${file(./src/config.js):UserToListListIndexName}
+        - arn:aws:appsync:${self:provider.region}:${aws:accountId}:apis/idvcmermhnd4tivnnp73ny6z4i/*
+
+plugins:
+  - serverless-offline
+  - serverless-functions-base-path
+
+custom:
+  cognitoUserPoolArn: arn:aws:cognito-idp:us-east-1:065913925480:userpool/us-east-1_4bDbJMLSx
+  functionsBasePath: src
+  serverless-offline:
+    printOutput: true
+    lambdaTimeout: 900
+
+functions:
+  app:
+    handler: app.handler
+    events:
+      - http:
+          path: /status
+          method: get
+  # users
+  getUser:
+    handler: app.handler
+    events:
+      - http:
+          method: get
+          path: users/{id}
+  getUsersByList:
+    handler: app.handler
+    events:
+      - http:
+          method: get
+          path: users/getUsersBylist
+  # todoLists
+  getAllTodoLists:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  getTodoList:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  createTodoList:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  updateTodoList:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  deleteTodoList:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  upsertSharedUser:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/share
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  deleteSharedUser:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/share/{sid}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  # todos
+  getAllTodo:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/todo
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  getTodo:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/todo/{tid}
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  deleteTodo:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/todo/{tid}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  createTodo:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/todo/
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  updateTodo:
+    handler: app.handler
+    events:
+      - http:
+          path: users/{id}/todo-lists/{lid}/todo/{tid}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
+  todoStream:
+    handler: dataUpdateStream.handler
+    events:
+      - stream:
+          type: dynamodb
+          batchSize: 100
+          startingPosition: LATEST
+          arn:
+            Fn::GetAtt:
+              - UserToListTable
+              - StreamArn
+      - stream:
+          type: dynamodb
+          batchSize: 100
+          startingPosition: LATEST
+          arn:
+            Fn::GetAtt:
+              - TodoTable
+              - StreamArn
+resources:
+  Resources:
+    TodoTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: ${file(./src/config.js):TodoKey}
+            AttributeType: S
+          - AttributeName: ${file(./src/config.js):TodoSecondaryKey}
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ${file(./src/config.js):TodoKey}
+            KeyType: HASH
+          - AttributeName: ${file(./src/config.js):TodoSecondaryKey}
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${file(./src/config.js):TodoTableName}
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    UserToListTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: ${file(./src/config.js):UserToListKey}
+            AttributeType: S
+          - AttributeName: ${file(./src/config.js):UserToListSecondaryKey}
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ${file(./src/config.js):UserToListKey}
+            KeyType: HASH
+          - AttributeName: ${file(./src/config.js):UserToListSecondaryKey}
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ${file(./src/config.js):UserToListListIndexName}
+            KeySchema:
+              - AttributeName: ${file(./src/config.js):UserToListSecondaryKey}
+                KeyType: HASH
+            Projection:
+              ProjectionType: 'ALL'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 5
+              WriteCapacityUnits: 5
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${file(./src/config.js):UserToListTableName}
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    TodoListTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: ${file(./src/config.js):TodoListKey}
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ${file(./src/config.js):TodoListKey}
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        TableName: ${file(./src/config.js):TodoListTableName}
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES

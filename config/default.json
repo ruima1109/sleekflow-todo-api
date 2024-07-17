@@ -1,0 +1,26 @@
+{
+  "dynamoDB": {
+    "todoDB": {
+      "tableName": "sleekflow-todo",
+      "primaryKey": "listId",
+      "secondaryKey": "todoId"
+    },
+    "todoListDB": {
+      "tableName": "sleekflow-list",
+      "primaryKey": "listId"
+    },
+    "userToListDB": {
+      "tableName": "sleekflow-user-to-list",
+      "primaryKey": "userId",
+      "secondaryKey": "listId",
+      "listIndexName": "listId-index"
+    }
+  },
+  "todoAppSyncAPI": {
+    "url": "https://u4diqjuksvfavi7r65ggpoqr3m.appsync-api.us-east-1.amazonaws.com/graphql"
+  },
+  "auth": {
+    "disableAwsAuth": false
+  },
+  "debugMode": false
+}
