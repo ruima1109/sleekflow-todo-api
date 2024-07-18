@@ -32,12 +32,22 @@ class TodoListService {
    */
   async getTodoLists(userId, includeTodos) {
     const todoLists = await this.todoListRepository.findByUserId(userId);
+
+    const listDetailsPromises = todoLists.map(async (list) => {
+      const listWithDetails = await this.getTodoListById(list.listId);
+      return Object.assign(list, listWithDetails);;
+    });
+
+    const listsWithDetails = await Promise.all(listDetailsPromises);
+
     if (includeTodos) {
-      for (const list of todoLists) {
+      const todosPromises = todoLists.map(async (list) => {
         list.todos = await this.todoListRepository.findTodosByListId(list.listId);
-      }
+      });
+      await Promise.all(todosPromises);
     }
-    return todoLists;
+    
+    return listsWithDetails;
   }
 
   /**
