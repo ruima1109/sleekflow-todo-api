@@ -28,6 +28,7 @@ provider:
 plugins:
   - serverless-offline
   - serverless-functions-base-path
+  - serverless-scriptable-plugin
 
 custom:
   cognitoUserPoolArn: arn:aws:cognito-idp:us-east-1:065913925480:userpool/us-east-1_4bDbJMLSx
@@ -35,6 +36,8 @@ custom:
   serverless-offline:
     printOutput: true
     lambdaTimeout: 900
+  scriptHooks:
+    before:package:createDeploymentArtifacts: npm run lint && npm run test
 
 functions:
   app:
