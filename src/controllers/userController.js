@@ -11,7 +11,6 @@ class UserController {
         /** @type {import('../services/userService')} */
         this.userService = userService;
         this.getUsersByList = this.getUsersByList.bind(this);
-        this.getUserInfo = this.getUserInfo.bind(this);
     }
 
     /**
