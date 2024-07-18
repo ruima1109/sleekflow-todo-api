@@ -1,11 +1,11 @@
-# todo-extension-api
+# todo-api
 
-Backend for todo-extension
+Backend for sleekflow-todo-demo
 
 ## How to set up the dev environment
 
 1. pull the code
-   $ git clone https://github.com/kehengz/todo-extension-api.git
+   $ git clone https://github.com/ruima1109/sleekflow-todo-api.git
 2. run
 
 ```sh
@@ -62,4 +62,3 @@ To deploy the server in staging, run
 ```sh
 npm run deploy
 ```
-
