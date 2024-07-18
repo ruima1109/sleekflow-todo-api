@@ -52,6 +52,7 @@ describe('UserRepository', () => {
         ':lid': listId
       }
     });
+    
 
     expect(false).toEqual(expectedResponse.Items);
   });
