@@ -4,11 +4,11 @@
   "main": "./src/app.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "husky install",
     "test": "NODE_ENV=dev jest",
     "debug": "npm run lint && export SLS_DEBUG=* NODE_ENV=dev && nodemon --exec \"./node_modules/.bin/serverless offline -s dev\"",
     "deploy": "npm run lint && npm run test && export NODE_ENV=staging && ./node_modules/.bin/serverless deploy --force",
-    "deploy-todoStream": "export NODE_ENV=staging && ./node_modules/.bin/serverless deploy function -f todoStream"
+    "deploy-todoStream": "export NODE_ENV=staging && ./node_modules/.bin/serverless deploy function -f todoStream",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -39,11 +39,5 @@
     "serverless": "^3.2.0",
     "serverless-functions-base-path": "^1.0.33",
     "serverless-offline": "^13.6.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint && npm run test",
-      "pre-push": "npm run lint && npm run test"
-    }
   }
 }
