@@ -178,6 +178,16 @@ functions:
           authorizer:
             name: authorizer
             arn: ${self:custom.cognitoUserPoolArn}
+  dbStreamTestAPI:
+    handler: app.handler
+    events:
+      - http:
+          path: stream
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+            arn: ${self:custom.cognitoUserPoolArn}
   todoStream:
     handler: dataUpdateStream.handler
     events:
