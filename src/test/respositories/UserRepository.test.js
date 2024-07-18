@@ -53,7 +53,6 @@ describe('UserRepository', () => {
       }
     });
     
-
     expect(false).toEqual(expectedResponse.Items);
   });
 });
