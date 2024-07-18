@@ -48,7 +48,8 @@ const createTodoService = () => {
 const createTodoListService = () => {
   if (!todoListServiceIInstance) {
     const databaseManager = createDatabaseManager();
-    const todoListRepository = new TodoListRepository(databaseManager);
+    const userRepository = new UserRepository(databaseManager);
+    const todoListRepository = new TodoListRepository(databaseManager, userRepository);
     const todoListService = new TodoListService(todoListRepository, idGenerator);
     todoListServiceIInstance = todoListService;
   }

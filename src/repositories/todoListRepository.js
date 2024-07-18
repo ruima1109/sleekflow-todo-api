@@ -9,10 +9,14 @@ class TodoListRepository {
   /**
    * Creates an instance of TodoListRepository.
    * @param {DatabaseManager} databaseManager - The database manager.
+   * @param {UserRepository} userRepository - The user repository.
    */
-  constructor(databaseManager) {
+  constructor(databaseManager, userRepository) {
     /** @type {import('./database/databaseManager')} */
     this.databaseManager = databaseManager;
+    /** @type {import('./userRepository')} */
+    this.userRepository = userRepository;
+
     /**
      * @type {import('@aws-sdk/lib-dynamodb').DynamoDBDocumentClient}
      */
@@ -182,37 +186,40 @@ class TodoListRepository {
   /**
    * Deletes a todo list.
    * @param {string} listId - The list ID.
-   * @param {string} userId - The ID of the user.
    * @returns {Promise<{ listId: string }>} The deleted todo list ID.
-   */  async delete(listId, userId) {
-    const todoItems = await this.findTodosByListId(listId);
+   */  
+  async delete(listId) {
+      const todoItems = await this.findTodosByListId(listId);
 
-    const deleteTodoItems = todoItems.map(item => ({
-      TableName: TodoTableName,
-      Key: {
-        [TodoKey]: item[TodoKey],
-        [TodoSecondaryKey]: item[TodoSecondaryKey]
-      }
-    }));
-
-    const deleteRequests = [
-      {
-        TableName: TodoListTableName,
+      const deleteTodoItemCommands = todoItems.map(item => ({
+        TableName: TodoTableName,
         Key: {
-          [TodoListKey]: listId
+          [TodoKey]: item[TodoKey],
+          [TodoSecondaryKey]: item[TodoSecondaryKey]
         }
-      },
-      {
+      }));
+
+      const deleteUserToListItems = await this.userRepository.getUsersByList(listId);
+      const deleteUserToListCommands = deleteUserToListItems.map(userToList => ({
         TableName: UserToListTableName,
         Key: {
-          [UserToListKey]: userId,
-          [UserToListSecondaryKey]: listId
+          [UserToListKey]: userToList.userId,
+          [UserToListSecondaryKey]: userToList.listId
         }
-      },
-      ...deleteTodoItems
-    ];
-    await this.batchDeleteItems(deleteRequests);
-    return { listId };
+      }));
+
+      const deleteRequests = [
+        {
+          TableName: TodoListTableName,
+          Key: {
+            [TodoListKey]: listId
+          }
+        },
+        ...deleteUserToListCommands,
+        ...deleteTodoItemCommands
+      ];
+      await this.batchDeleteItems(deleteRequests);
+      return { listId };
   }
 
   /**
